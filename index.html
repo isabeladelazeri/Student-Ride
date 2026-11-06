@@ -1,1 +1,1097 @@
 
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Rider - Campus Rideshare</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Leaflet CSS & JS (Interactive Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
+    
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Layout Protection CSS (Ensures clean rendering on CDN latency) -->
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+
+        /* Guarantee Map Height and Styling */
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+            background: #0f172a;
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            font-family: 'Inter', sans-serif !important;
+            background-color: #0f172a !important;
+        }
+
+        /* Leaflet Popup Styling */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: #1e293b !important;
+            color: #f8fafc !important;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border-radius: 12px !important;
+        }
+
+        /* Custom Driver Pin */
+        .custom-driver-pin {
+            background: transparent;
+            border: none;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col md:flex-row overflow-x-hidden md:overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- SIDEBAR / MAIN PANEL -->
+    <aside class="w-full md:w-[450px] flex flex-col h-auto md:h-full bg-slate-900 border-r border-slate-800 z-20 shadow-2xl shrink-0">
+        
+        <!-- HEADER -->
+        <header class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-car-side"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+                        Student Rider
+                        <span class="text-[10px] bg-brand-500/20 text-brand-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold border border-brand-500/30">Campus</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Trusted student carpooling & rideshare</p>
+                </div>
+            </div>
+            
+            <!-- CURRENT USER MENU -->
+            <button onclick="toggleUserModal()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition duration-200">
+                <div class="w-6 h-6 rounded-full bg-brand-500 text-slate-950 font-bold text-xs flex items-center justify-center" id="currentUserAvatar">
+                    P
+                </div>
+                <span class="text-xs font-medium text-slate-200 max-w-[90px] truncate" id="currentUserName">Passenger</span>
+                <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+            </button>
+        </header>
+
+        <!-- TAB NAVIGATION -->
+        <nav class="flex border-b border-slate-800 bg-slate-900/50 p-1 gap-1">
+            <button onclick="switchTab('ride')" id="tab-ride" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700">
+                <i class="fa-solid fa-route"></i> Rides
+            </button>
+            <button onclick="switchTab('ranking')" id="tab-ranking" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <i class="fa-solid fa-trophy text-amber-400"></i> Leaderboard
+            </button>
+            <button onclick="switchTab('drivers')" id="tab-drivers" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <i class="fa-solid fa-users"></i> Drivers
+            </button>
+        </nav>
+
+        <!-- TAB CONTENT -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 max-h-[500px] md:max-h-none">
+
+            <!-- TAB 1: REQUEST RIDE -->
+            <section id="content-ride" class="space-y-4">
+                
+                <!-- ROUTE SEARCH CARDS -->
+                <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60 space-y-3 relative">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Plan Trip</div>
+                    
+                    <div class="relative">
+                        <div class="absolute left-3 top-3 text-emerald-400 text-xs"><i class="fa-solid fa-circle"></i></div>
+                        <input type="text" id="input-pickup" placeholder="Pickup location (e.g. Block A - Library)" value="Main Campus - Block A" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute left-3 top-3 text-red-500 text-xs"><i class="fa-solid fa-square"></i></div>
+                        <input type="text" id="input-dropoff" placeholder="Destination (e.g. Downtown Terminal)" value="University Housing - Rose St" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="useCurrentLocation()" class="flex-1 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border border-slate-600/50 transition">
+                            <i class="fa-solid fa-location-crosshairs text-brand-400"></i> My GPS
+                        </button>
+                        <button onclick="searchRoute()" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-slate-950 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md shadow-brand-600/20">
+                            <i class="fa-solid fa-magnifying-glass"></i> Find Route
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AVAILABLE DRIVERS LIST -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nearby Drivers</h3>
+                        <span class="text-xs text-brand-400 font-medium" id="available-count">0 available</span>
+                    </div>
+
+                    <div class="space-y-3" id="drivers-list">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: LEADERBOARD -->
+            <section id="content-ranking" class="hidden space-y-4">
+                <div class="bg-gradient-to-r from-amber-500/10 via-slate-800 to-slate-800 p-4 rounded-2xl border border-amber-500/20">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-100 text-sm">Top Campus Drivers</h3>
+                            <p class="text-xs text-slate-400">Rewards and reputation for students sharing rides!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5" id="leaderboard-list">
+                    <!-- Rendered via JS -->
+                </div>
+            </section>
+
+            <!-- TAB 3: ALL DRIVERS & REGISTRATION -->
+            <section id="content-drivers" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Drivers Community</h3>
+                    <button onclick="openRegisterDriverModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-md shadow-brand-600/20">
+                        <i class="fa-solid fa-plus"></i> Become Driver
+                    </button>
+                </div>
+
+                <div class="space-y-3" id="all-drivers-list">
+                    <!-- Rendered via JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- ACTIVE RIDE PANEL (BOTTOM OVERLAY) -->
+        <div id="active-ride-panel" class="hidden p-4 bg-slate-900 border-t border-slate-800 shadow-2xl space-y-3">
+            <div class="flex justify-between items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-brand-400 uppercase tracking-widest flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-brand-500 animate-ping"></span> Ride Requested
+                    </span>
+                    <h4 class="font-bold text-slate-100 text-sm" id="active-driver-name">Driver</h4>
+                    <p class="text-xs text-slate-400" id="active-driver-car">Vehicle - License Plate</p>
+                </div>
+                <button onclick="openChatWithActiveDriver()" class="relative p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition">
+                    <i class="fa-solid fa-comments text-brand-400"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-brand-500 rounded-full animate-pulse"></span>
+                </button>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="openChatWithActiveDriver()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-message"></i> Send Private Message
+                </button>
+                <button onclick="finishRide()" class="py-2 px-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-medium transition">
+                    Complete Ride
+                </button>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- GPS MAP AREA -->
+    <main class="flex-1 h-[400px] md:h-full relative min-h-[350px]">
+        <div id="map"></div>
+
+        <!-- FLOATING MAP BUTTONS -->
+        <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+            <button onclick="recenterMap()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition" title="Center Map">
+                <i class="fa-solid fa-crosshairs"></i>
+            </button>
+            <button onclick="toggleUserModal()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition" title="My Profile">
+                <i class="fa-solid fa-user"></i>
+            </button>
+        </div>
+
+        <!-- FLOATING SAFETY BADGE -->
+        <div class="absolute bottom-4 right-4 z-10 hidden sm:block bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-800 shadow-xl text-xs max-w-xs text-slate-300">
+            <div class="flex items-center gap-2 font-semibold text-slate-100 mb-1">
+                <i class="fa-solid fa-shield-halved text-brand-400"></i> Campus Safety First
+            </div>
+            Rides shared exclusively among verified students. Review and help the community!
+        </div>
+    </main>
+
+    <!-- MODAL 1: DRIVER PROFILE (REPUTATION, REVIEWS, LIKE/DISLIKE) -->
+    <div id="modal-driver-profile" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-brand-400"></i> Driver Profile
+                </h3>
+                <button onclick="closeModal('modal-driver-profile')" class="text-slate-400 hover:text-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 overflow-y-auto custom-scrollbar space-y-4">
+                <!-- Profile Header Card -->
+                <div class="flex items-start gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center font-bold text-slate-950 text-2xl shadow-lg shadow-brand-500/20 shrink-0" id="dp-avatar">
+                        M
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <h4 class="font-bold text-slate-100 text-lg truncate" id="dp-name">Driver Name</h4>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap" id="dp-badge">
+                                Top Driver
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5" id="dp-course">Computer Science</p>
+
+                        <!-- Vehicle Info -->
+                        <div class="mt-3 grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">VEHICLE</span>
+                                <span class="font-medium text-slate-200 truncate block" id="dp-car">Civic 2.0 - Silver</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">PLATE</span>
+                                <span class="font-medium text-brand-400 font-mono uppercase" id="dp-plate">ABC-1234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reputation Stats & Side-by-Side Like/Dislike Buttons -->
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/40 flex flex-col items-center justify-center">
+                        <div class="text-[10px] uppercase font-semibold text-slate-400">Rides Completed</div>
+                        <div class="text-xl font-bold text-white mt-1" id="dp-rides-count">0</div>
+                    </div>
+
+                    <!-- Recommend Button (Like) -->
+                    <button onclick="rateDriver(true)" class="bg-emerald-500/10 hover:bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 text-emerald-400 transition group flex flex-col items-center justify-center">
+                        <div class="flex items-center gap-1.5 font-bold text-sm">
+                            <i class="fa-solid fa-thumbs-up text-base group-hover:scale-125 transition transform"></i>
+                            <span id="dp-likes">0</span>
+                        </div>
+                        <span class="text-[10px] uppercase font-semibold mt-1">Recommend</span>
+                    </button>
+
+                    <!-- Do Not Recommend Button (Dislike) -->
+                    <button onclick="rateDriver(false)" class="bg-red-500/10 hover:bg-red-500/20 p-3 rounded-xl border border-red-500/30 text-red-400 transition group flex flex-col items-center justify-center">
+                        <div class="flex items-center gap-1.5 font-bold text-sm">
+                            <i class="fa-solid fa-thumbs-down text-base group-hover:scale-125 transition transform"></i>
+                            <span id="dp-dislikes">0</span>
+                        </div>
+                        <span class="text-[10px] uppercase font-semibold mt-1">Don't Recommend</span>
+                    </button>
+                </div>
+
+                <!-- Comments & Reviews Section -->
+                <div class="space-y-3">
+                    <h5 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Comments & Reviews</span>
+                        <span class="text-slate-500 text-[11px]" id="dp-reviews-count">0 reviews</span>
+                    </h5>
+
+                    <!-- New Comment Form -->
+                    <div class="space-y-2">
+                        <textarea id="dp-new-comment" placeholder="Write a review for this driver..." rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                        <div class="flex justify-end">
+                            <button onclick="addDriverComment()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-brand-400 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-paper-plane"></i> Submit Review
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div class="space-y-2 mt-3" id="dp-comments-list">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/80 flex gap-2">
+                <button onclick="openChatFromProfile()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-message text-brand-400"></i> Direct Message
+                </button>
+                <button onclick="requestRideWithDriverFromProfile()" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-brand-600/20">
+                    <i class="fa-solid fa-car"></i> Request Ride
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: PRIVATE CHAT WITH DRIVER -->
+    <div id="modal-chat" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md h-[550px] flex flex-col shadow-2xl overflow-hidden">
+            
+            <!-- Chat Header -->
+            <div class="p-3.5 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-brand-500 text-slate-950 font-bold flex items-center justify-center text-sm shrink-0" id="chat-driver-avatar">
+                        M
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-100 text-sm leading-tight" id="chat-driver-name">Driver Name</h4>
+                        <p class="text-[10px] text-emerald-400 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Route Chat & Updates
+                        </p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-chat')" class="text-slate-400 hover:text-slate-100 transition p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-950/50" id="chat-messages-container">
+                <!-- Rendered via JS -->
+            </div>
+
+            <!-- Text Input -->
+            <form onsubmit="sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-900 flex gap-2">
+                <input type="text" id="chat-input" placeholder="Agree on pickup point or route changes..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                <button type="submit" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-slate-950 rounded-xl font-bold text-xs flex items-center justify-center transition">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: DRIVER & VEHICLE REGISTRATION -->
+    <div id="modal-register-driver" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-brand-400"></i> Driver Registration
+                </h3>
+                <button onclick="closeModal('modal-register-driver')" class="text-slate-400 hover:text-slate-100">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleRegisterDriver(event)" class="p-4 space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Full Name</label>
+                    <input type="text" id="reg-driver-name" required placeholder="Your full name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1">Major / Faculty</label>
+                    <input type="text" id="reg-driver-course" required placeholder="e.g. Mechanical Engineering - Main Campus" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Car Model</label>
+                        <input type="text" id="reg-driver-model" required placeholder="e.g. Honda Civic" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Color</label>
+                        <input type="text" id="reg-driver-color" required placeholder="e.g. Black" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">License Plate</label>
+                        <input type="text" id="reg-driver-plate" required placeholder="e.g. ABC-1234" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none font-mono uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Available Seats</label>
+                        <input type="number" id="reg-driver-seats" min="1" max="6" value="3" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-brand-600/20">
+                        Register & Offer Rides
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PASSENGER PROFILE MODAL -->
+    <div id="modal-user" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden p-4 space-y-3">
+            <h3 class="font-bold text-slate-100 text-sm">Your Passenger Profile</h3>
+            <p class="text-xs text-slate-400">What name would you like to display on requests?</p>
+            
+            <input type="text" id="user-name-input" placeholder="Your name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-brand-500 outline-none">
+            
+            <div class="flex gap-2 pt-1">
+                <button onclick="closeModal('modal-user')" class="flex-1 py-2 bg-slate-800 text-slate-400 rounded-xl text-xs font-semibold">Cancel</button>
+                <button onclick="saveUserProfile()" class="flex-1 py-2 bg-brand-600 text-slate-950 font-bold rounded-xl text-xs">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION SCRIPT -->
+    <script>
+        // Initial Default Mock Drivers (English Data)
+        const DEFAULT_DRIVERS = [
+            {
+                id: 'd1',
+                name: 'Alex Johnson',
+                course: 'Civil Engineering - Senior Year',
+                carModel: 'Toyota Corolla',
+                carColor: 'White',
+                plate: 'ABC-4E12',
+                seats: 3,
+                ridesGiven: 48,
+                likes: 32,
+                dislikes: 1,
+                badge: 'Car-Master',
+                lat: -22.9068,
+                lng: -43.1729,
+                reviews: [
+                    { author: 'Sarah P.', text: 'Super punctual and respectful! Smooth drive to campus.', date: 'Yesterday' },
+                    { author: 'Charles E.', text: 'Great music and very nice trip all the way to the lab.', date: '3 days ago' }
+                ],
+                chatHistory: [
+                    { sender: 'Alex Johnson', text: 'Hey! I will be leaving Gate 2 in about 5 minutes.', time: '10:40' }
+                ]
+            },
+            {
+                id: 'd2',
+                name: 'Emily Watson',
+                course: 'Medicine - 4th Year',
+                carModel: 'Honda Civic',
+                carColor: 'Grey',
+                plate: 'XYZ-9876',
+                seats: 2,
+                ridesGiven: 65,
+                likes: 54,
+                dislikes: 0,
+                badge: 'Campus Legend',
+                lat: -22.9090,
+                lng: -43.1780,
+                reviews: [
+                    { author: 'Beatrice M.', text: 'Best rideshare driver on campus! Always saves me before morning lectures.', date: 'Today' }
+                ],
+                chatHistory: []
+            },
+            {
+                id: 'd3',
+                name: 'David Miller',
+                course: 'Business Administration',
+                carModel: 'Volkswagen Golf',
+                carColor: 'Red',
+                plate: 'KLU-3A88',
+                seats: 4,
+                ridesGiven: 19,
+                likes: 12,
+                dislikes: 2,
+                badge: 'Active Student',
+                lat: -22.9020,
+                lng: -43.1750,
+                reviews: [
+                    { author: 'Philip T.', text: 'Nice guy, safe driving.', date: 'Last week' }
+                ],
+                chatHistory: []
+            }
+        ];
+
+        let drivers = [];
+        let currentUser = { name: 'Student Rider' };
+        let selectedDriverId = null;
+        let activeRide = null;
+        let map = null;
+        let markersGroup = null;
+        let routeLayer = null;
+        let mapCenter = [-22.9068, -43.1729];
+
+        // Initialization
+        window.onload = function () {
+            loadLocalStorageData();
+            initMap();
+            renderDriversList();
+            renderLeaderboard();
+            renderAllDriversTab();
+            updateUserUI();
+
+            // Auto-adjust map on browser resize
+            window.addEventListener('resize', () => {
+                if (map) map.invalidateSize();
+            });
+        };
+
+        function loadLocalStorageData() {
+            const savedDrivers = localStorage.getItem('sr_drivers');
+            if (savedDrivers) {
+                try {
+                    drivers = JSON.parse(savedDrivers);
+                } catch(e) {
+                    drivers = DEFAULT_DRIVERS;
+                }
+            } else {
+                drivers = DEFAULT_DRIVERS;
+                saveDriversToStorage();
+            }
+
+            const savedUser = localStorage.getItem('sr_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                } catch(e) {}
+            }
+        }
+
+        function saveDriversToStorage() {
+            localStorage.setItem('sr_drivers', JSON.stringify(drivers));
+        }
+
+        function saveUserProfile() {
+            const input = document.getElementById('user-name-input').value.trim();
+            if (input) {
+                currentUser.name = input;
+                localStorage.setItem('sr_user', JSON.stringify(currentUser));
+                updateUserUI();
+                closeModal('modal-user');
+            }
+        }
+
+        function updateUserUI() {
+            document.getElementById('currentUserName').innerText = currentUser.name;
+            document.getElementById('currentUserAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+            document.getElementById('user-name-input').value = currentUser.name;
+        }
+
+        // Leaflet Map Initialization
+        function initMap() {
+            if (typeof L === 'undefined') return;
+
+            map = L.map('map', { zoomControl: false }).setView(mapCenter, 14);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+            renderDriverMarkersOnMap();
+
+            setTimeout(() => { map.invalidateSize(); }, 300);
+        }
+
+        function renderDriverMarkersOnMap() {
+            if (!markersGroup) return;
+            markersGroup.clearLayers();
+
+            drivers.forEach(driver => {
+                const customIcon = L.divIcon({
+                    className: 'custom-driver-pin',
+                    html: `
+                        <div onclick="openDriverProfile('${driver.id}')" class="relative group cursor-pointer">
+                            <div class="w-9 h-9 rounded-full bg-slate-900 border-2 border-brand-500 shadow-xl flex items-center justify-center text-brand-400 font-bold text-sm transform transition group-hover:scale-110">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-slate-700 whitespace-nowrap flex gap-1 items-center shadow">
+                                <span class="text-emerald-400">👍 ${driver.likes}</span>
+                                <span class="text-red-400">👎 ${driver.dislikes}</span>
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                });
+
+                const marker = L.marker([driver.lat, driver.lng], { icon: customIcon });
+                marker.bindPopup(`
+                    <div class="text-xs space-y-1">
+                        <strong class="text-white text-sm block">${driver.name}</strong>
+                        <div class="text-slate-300"><i class="fa-solid fa-car"></i> ${driver.carModel} (${driver.carColor})</div>
+                        <div class="text-slate-400 font-mono"><i class="fa-solid fa-rectangle-ad"></i> Plate: ${driver.plate}</div>
+                        <div class="flex items-center gap-2 pt-1 font-bold text-[11px]">
+                            <span class="text-emerald-400">👍 ${driver.likes} Recommended</span>
+                            <span class="text-red-400">👎 ${driver.dislikes} Not Recommended</span>
+                        </div>
+                        <button onclick="openDriverProfile('${driver.id}')" class="w-full mt-2 py-1 bg-brand-600 text-slate-950 font-bold rounded text-[11px]">View Profile & Reputation</button>
+                    </div>
+                `);
+                markersGroup.addLayer(marker);
+            });
+        }
+
+        function recenterMap() {
+            if (map) map.setView(mapCenter, 14);
+        }
+
+        function useCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    mapCenter = [lat, lng];
+                    map.setView(mapCenter, 15);
+                    
+                    L.marker([lat, lng]).addTo(map)
+                        .bindPopup("Your Current Location")
+                        .openPopup();
+                        
+                    document.getElementById('input-pickup').value = "My GPS Location";
+                }, () => {
+                    alert("Unable to access GPS location. Defaulting to campus region.");
+                });
+            } else {
+                alert("GPS is not supported on this device.");
+            }
+        }
+
+        function searchRoute() {
+            if (!map) return;
+            if (routeLayer) map.removeLayer(routeLayer);
+
+            const startPoint = [mapCenter[0] - 0.01, mapCenter[1] - 0.01];
+            const endPoint = [mapCenter[0] + 0.015, mapCenter[1] + 0.02];
+
+            const latlngs = [
+                startPoint,
+                [mapCenter[0] - 0.002, mapCenter[1] + 0.005],
+                endPoint
+            ];
+
+            routeLayer = L.polyline(latlngs, { color: '#22c55e', weight: 4, opacity: 0.8, dashArray: '8, 8' }).addTo(map);
+            map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+            L.marker(startPoint).addTo(map).bindPopup("Pickup Point");
+            L.marker(endPoint).addTo(map).bindPopup("Destination");
+        }
+
+        // Tabs Switching Logic
+        function switchTab(tabName) {
+            ['ride', 'ranking', 'drivers'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50';
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700';
+        }
+
+        function renderDriversList() {
+            const container = document.getElementById('drivers-list');
+            container.innerHTML = '';
+            document.getElementById('available-count').innerText = `${drivers.length} available`;
+
+            drivers.forEach(driver => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/40 hover:bg-slate-800 p-3.5 rounded-2xl border border-slate-700/50 transition duration-200 space-y-3 cursor-pointer";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start" onclick="openDriverProfile('${driver.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 text-brand-400 font-bold flex items-center justify-center text-sm shrink-0">
+                                ${driver.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-sm flex items-center gap-1.5">
+                                    ${driver.name}
+                                    <span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded font-normal">${driver.badge}</span>
+                                </h4>
+                                <p class="text-xs text-slate-400">${driver.carModel} • <span class="font-mono text-slate-300 uppercase">${driver.plate}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-700/40">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                <i class="fa-solid fa-thumbs-up"></i> ${driver.likes}
+                            </span>
+                            <span class="text-red-400 font-medium flex items-center gap-1 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
+                                <i class="fa-solid fa-thumbs-down"></i> ${driver.dislikes}
+                            </span>
+                        </div>
+                        
+                        <div class="flex gap-1.5">
+                            <button onclick="openChatWithDriver('${driver.id}', event)" class="p-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition" title="Private Message">
+                                <i class="fa-solid fa-comments"></i>
+                            </button>
+                            <button onclick="requestRide('${driver.id}', event)" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-lg text-xs transition">
+                                Request Ride
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            container.innerHTML = '';
+
+            const sorted = [...drivers].sort((a, b) => (b.ridesGiven + (b.likes - b.dislikes)) - (a.ridesGiven + (a.likes - a.dislikes)));
+
+            sorted.forEach((driver, idx) => {
+                let medalColor = "text-slate-500";
+                if (idx === 0) medalColor = "text-amber-400 text-lg";
+                else if (idx === 1) medalColor = "text-slate-300 text-base";
+                else if (idx === 2) medalColor = "text-amber-700 text-base";
+
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700/40 hover:bg-slate-800 transition cursor-pointer";
+                row.onclick = () => openDriverProfile(driver.id);
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-6 text-center font-bold ${medalColor}">
+                            ${idx < 3 ? '<i class="fa-solid fa-trophy"></i>' : `#${idx + 1}`}
+                        </div>
+                        <div class="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-bold text-slate-200 text-xs shrink-0">
+                            ${driver.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-200 text-xs">${driver.name}</h4>
+                            <p class="text-[10px] text-slate-400">${driver.course}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="text-xs font-bold text-brand-400">${driver.ridesGiven} rides</div>
+                        <div class="text-[10px] flex items-center gap-1.5 justify-end mt-0.5">
+                            <span class="text-emerald-400 font-semibold">👍 ${driver.likes}</span>
+                            <span class="text-red-400 font-semibold">👎 ${driver.dislikes}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderAllDriversTab() {
+            const container = document.getElementById('all-drivers-list');
+            container.innerHTML = '';
+
+            drivers.forEach(driver => {
+                const el = document.createElement('div');
+                el.className = "bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/40 space-y-2";
+                el.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="font-bold text-slate-200 text-xs">${driver.name}</div>
+                        <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">${driver.plate}</span>
+                    </div>
+                    <div class="text-xs text-slate-400">
+                        ${driver.carModel} (${driver.carColor}) • Seats: ${driver.seats}
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button onclick="openDriverProfile('${driver.id}')" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium">View Profile & Reviews</button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // Profile & Reputation Logic
+        function openDriverProfile(driverId) {
+            selectedDriverId = driverId;
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+
+            document.getElementById('dp-avatar').innerText = driver.name.charAt(0);
+            document.getElementById('dp-name').innerText = driver.name;
+            document.getElementById('dp-badge').innerText = driver.badge;
+            document.getElementById('dp-course').innerText = driver.course;
+            document.getElementById('dp-car').innerText = `${driver.carModel} (${driver.carColor})`;
+            document.getElementById('dp-plate').innerText = driver.plate;
+            document.getElementById('dp-rides-count').innerText = driver.ridesGiven;
+            document.getElementById('dp-likes').innerText = driver.likes;
+            document.getElementById('dp-dislikes').innerText = driver.dislikes;
+            document.getElementById('dp-reviews-count').innerText = `${driver.reviews.length} reviews`;
+
+            renderDriverComments(driver.reviews);
+            document.getElementById('modal-driver-profile').classList.remove('hidden');
+        }
+
+        function renderDriverComments(reviews) {
+            const container = document.getElementById('dp-comments-list');
+            container.innerHTML = '';
+
+            if (reviews.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-2">No reviews yet. Be the first to leave feedback!</p>`;
+                return;
+            }
+
+            reviews.forEach(rev => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = "bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1 text-xs";
+                commentDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-slate-300 text-[11px]">${rev.author}</span>
+                        <span class="text-[10px] text-slate-500">${rev.date}</span>
+                    </div>
+                    <p class="text-slate-400">${rev.text}</p>
+                `;
+                container.appendChild(commentDiv);
+            });
+        }
+
+        function rateDriver(isLike) {
+            if (!selectedDriverId) return;
+            const driver = drivers.find(d => d.id === selectedDriverId);
+            if (!driver) return;
+
+            if (isLike) {
+                driver.likes += 1;
+            } else {
+                driver.dislikes += 1;
+            }
+
+            saveDriversToStorage();
+            openDriverProfile(selectedDriverId);
+            renderDriversList();
+            renderLeaderboard();
+            renderDriverMarkersOnMap();
+        }
+
+        function addDriverComment() {
+            const commentInput = document.getElementById('dp-new-comment');
+            const text = commentInput.value.trim();
+            if (!text || !selectedDriverId) return;
+
+            const driver = drivers.find(d => d.id === selectedDriverId);
+            if (!driver) return;
+
+            driver.reviews.unshift({
+                author: currentUser.name,
+                text: text,
+                date: 'Just now'
+            });
+
+            saveDriversToStorage();
+            commentInput.value = '';
+            openDriverProfile(selectedDriverId);
+        }
+
+        // Chat System Logic
+        function openChatWithDriver(driverId, e) {
+            if (e) e.stopPropagation();
+            selectedDriverId = driverId;
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+
+            document.getElementById('chat-driver-avatar').innerText = driver.name.charAt(0);
+            document.getElementById('chat-driver-name').innerText = driver.name;
+
+            renderChatMessages(driver.chatHistory);
+            document.getElementById('modal-chat').classList.remove('hidden');
+        }
+
+        function openChatFromProfile() {
+            closeModal('modal-driver-profile');
+            openChatWithDriver(selectedDriverId);
+        }
+
+        function openChatWithActiveDriver() {
+            if (activeRide) {
+                openChatWithDriver(activeRide.driverId);
+            }
+        }
+
+        function renderChatMessages(messages) {
+            const container = document.getElementById('chat-messages-container');
+            container.innerHTML = '';
+
+            if (messages.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Start a conversation to agree on pickup points or route details.</div>`;
+                return;
+            }
+
+            messages.forEach(msg => {
+                const isMe = msg.sender === currentUser.name;
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                msgDiv.innerHTML = `
+                    <div class="max-w-[80%] rounded-2xl px-3 py-2 text-xs ${isMe ? 'bg-brand-600 text-slate-950 rounded-br-none font-medium' : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'}">
+                        <p>${msg.text}</p>
+                    </div>
+                    <span class="text-[9px] text-slate-500 mt-0.5 px-1">${msg.time}</span>
+                `;
+                container.appendChild(msgDiv);
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text || !selectedDriverId) return;
+
+            const driver = drivers.find(d => d.id === selectedDriverId);
+            if (!driver) return;
+
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            driver.chatHistory.push({
+                sender: currentUser.name,
+                text: text,
+                time: timeStr
+            });
+
+            saveDriversToStorage();
+            input.value = '';
+            renderChatMessages(driver.chatHistory);
+
+            setTimeout(() => {
+                driver.chatHistory.push({
+                    sender: driver.name,
+                    text: "Sounds good! See you at the pickup location.",
+                    time: timeStr
+                });
+                saveDriversToStorage();
+                renderChatMessages(driver.chatHistory);
+            }, 1200);
+        }
+
+        // Rides & Request Handlers
+        function requestRide(driverId, e) {
+            if (e) e.stopPropagation();
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+
+            activeRide = {
+                driverId: driver.id,
+                driverName: driver.name,
+                car: `${driver.carModel} (${driver.plate})`
+            };
+
+            driver.ridesGiven += 1;
+            saveDriversToStorage();
+            renderDriversList();
+            renderLeaderboard();
+
+            document.getElementById('active-driver-name').innerText = driver.name;
+            document.getElementById('active-driver-car').innerText = `${driver.carModel} • Plate: ${driver.plate}`;
+            document.getElementById('active-ride-panel').classList.remove('hidden');
+
+            searchRoute();
+            alert(`Ride successfully requested with ${driver.name}!`);
+        }
+
+        function requestRideWithDriverFromProfile() {
+            closeModal('modal-driver-profile');
+            requestRide(selectedDriverId);
+        }
+
+        function finishRide() {
+            if (!activeRide) return;
+            const driverId = activeRide.driverId;
+            activeRide = null;
+            document.getElementById('active-ride-panel').classList.add('hidden');
+            
+            if (routeLayer && map) map.removeLayer(routeLayer);
+            openDriverProfile(driverId);
+        }
+
+        // Driver Registration Handler
+        function openRegisterDriverModal() {
+            document.getElementById('modal-register-driver').classList.remove('hidden');
+        }
+
+        function handleRegisterDriver(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-driver-name').value.trim();
+            const course = document.getElementById('reg-driver-course').value.trim();
+            const model = document.getElementById('reg-driver-model').value.trim();
+            const color = document.getElementById('reg-driver-color').value.trim();
+            const plate = document.getElementById('reg-driver-plate').value.trim().toUpperCase();
+            const seats = parseInt(document.getElementById('reg-driver-seats').value);
+
+            const newDriver = {
+                id: 'd_' + Date.now(),
+                name: name,
+                course: course,
+                carModel: model,
+                carColor: color,
+                plate: plate,
+                seats: seats,
+                ridesGiven: 0,
+                likes: 0,
+                dislikes: 0,
+                badge: 'Campus Rookie',
+                lat: mapCenter[0] + (Math.random() - 0.5) * 0.02,
+                lng: mapCenter[1] + (Math.random() - 0.5) * 0.02,
+                reviews: [],
+                chatHistory: []
+            };
+
+            drivers.unshift(newDriver);
+            saveDriversToStorage();
+
+            renderDriversList();
+            renderLeaderboard();
+            renderAllDriversTab();
+            renderDriverMarkersOnMap();
+
+            closeModal('modal-register-driver');
+            alert("Driver registered successfully! Your vehicle is now visible on the map.");
+        }
+
+        // Modal Helpers
+        function toggleUserModal() {
+            document.getElementById('modal-user').classList.toggle('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
