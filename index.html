@@ -27,25 +27,57 @@
     </script>
     
     <!-- Leaflet CSS & JS (Mapa interativo) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     
     <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
     
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Estilos de Proteção de Layout (Garante visual impecável mesmo em falhas de CDN) -->
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .leaflet-container { font-family: 'Inter', sans-serif; z-index: 1; }
-        /* Dark theme override for Leaflet popup */
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+
+        /* Garantia de altura e visual do Mapa */
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+            background: #0f172a;
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            font-family: 'Inter', sans-serif !important;
+            background-color: #0f172a !important;
+        }
+
+        /* Estilo do Popup do Leaflet */
         .leaflet-popup-content-wrapper, .leaflet-popup-tip {
             background: #1e293b !important;
             color: #f8fafc !important;
             border: 1px solid #334155;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border-radius: 12px !important;
         }
+
+        /* Pin customizado no mapa */
+        .custom-driver-pin {
+            background: transparent;
+            border: none;
+        }
+
+        /* Scrollbar estilizada */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -61,16 +93,16 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col md:flex-row overflow-hidden bg-slate-950 text-slate-100">
+<body class="h-full flex flex-col md:flex-row overflow-x-hidden md:overflow-hidden bg-slate-950 text-slate-100">
 
     <!-- BARRA LATERAL / PAINEL PRINCIPAL -->
-    <aside class="w-full md:w-[450px] flex flex-col h-full bg-slate-900 border-r border-slate-800 z-20 shadow-2xl relative">
+    <aside class="w-full md:w-[450px] flex flex-col h-auto md:h-full bg-slate-900 border-r border-slate-800 z-20 shadow-2xl shrink-0">
         
         <!-- HEADER DA APLICAÇÃO -->
         <header class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90 backdrop-blur-md">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid font-bold fa-car-side"></i>
+                    <i class="fa-solid fa-car-side"></i>
                 </div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
@@ -86,26 +118,26 @@
                 <div class="w-6 h-6 rounded-full bg-brand-500 text-slate-950 font-bold text-xs flex items-center justify-center" id="currentUserAvatar">
                     U
                 </div>
-                <span class="text-xs font-medium text-slate-200 max-w-[90px] truncate" id="currentUserName">Usuário</span>
+                <span class="text-xs font-medium text-slate-200 max-w-[90px] truncate" id="currentUserName">Passageiro</span>
                 <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
             </button>
         </header>
 
         <!-- NAVEGAÇÃO DE ABAS -->
         <nav class="flex border-b border-slate-800 bg-slate-900/50 p-1 gap-1">
-            <button onclick="switchTab('ride')" id="tab-ride" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700">
-                <i class="fa-solid fa-route"></i> Pedir Carona
+            <button onclick="switchTab('ride')" id="tab-ride" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700">
+                <i class="fa-solid fa-route"></i> Caronas
             </button>
-            <button onclick="switchTab('ranking')" id="tab-ranking" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <button onclick="switchTab('ranking')" id="tab-ranking" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                 <i class="fa-solid fa-trophy text-amber-400"></i> Ranking
             </button>
-            <button onclick="switchTab('drivers')" id="tab-drivers" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <button onclick="switchTab('drivers')" id="tab-drivers" class="flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                 <i class="fa-solid fa-users"></i> Motoristas
             </button>
         </nav>
 
         <!-- CONTEÚDO DAS ABAS -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 max-h-[500px] md:max-h-none">
 
             <!-- ABA 1: PEDIR CARONA -->
             <section id="content-ride" class="space-y-4">
@@ -116,7 +148,7 @@
                     
                     <div class="relative">
                         <div class="absolute left-3 top-3 text-emerald-400 text-xs"><i class="fa-solid fa-circle"></i></div>
-                        <input type="text" id="input-pickup" placeholder="Origem (Ex: Restaurante Universitário)" value="Campus Central - Bloco A" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                        <input type="text" id="input-pickup" placeholder="Origem (Ex: Bloco A - RU)" value="Campus Central - Bloco A" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition">
                     </div>
 
                     <div class="relative">
@@ -126,10 +158,10 @@
 
                     <div class="flex gap-2 pt-1">
                         <button onclick="useCurrentLocation()" class="flex-1 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border border-slate-600/50 transition">
-                            <i class="fa-solid fa-location-crosshairs text-brand-400"></i> Usar meu GPS
+                            <i class="fa-solid fa-location-crosshairs text-brand-400"></i> Meu GPS
                         </button>
                         <button onclick="searchRoute()" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-slate-950 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md shadow-brand-600/20">
-                            <i class="fa-solid fa-magnifying-glass"></i> Simular Rota
+                            <i class="fa-solid fa-magnifying-glass"></i> Traçar Rota
                         </button>
                     </div>
                 </div>
@@ -138,7 +170,7 @@
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Motoristas na Região</h3>
-                        <span class="text-xs text-brand-400 font-medium" id="available-count">3 disponíveis</span>
+                        <span class="text-xs text-brand-400 font-medium" id="available-count">0 disponíveis</span>
                     </div>
 
                     <div class="space-y-3" id="drivers-list">
@@ -156,7 +188,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-slate-100 text-sm">Top Caronueiros do Campus</h3>
-                            <p class="text-xs text-slate-400">Recompensa e reconhecimento para quem compartilha o trajeto!</p>
+                            <p class="text-xs text-slate-400">Recompensa e reputação para quem compartilha a rota!</p>
                         </div>
                     </div>
                 </div>
@@ -170,7 +202,7 @@
             <section id="content-drivers" class="hidden space-y-4">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Comunidade de Motoristas</h3>
-                    <button onclick="openRegisterDriverModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition">
+                    <button onclick="openRegisterDriverModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-md shadow-brand-600/20">
                         <i class="fa-solid fa-plus"></i> Ser Motorista
                     </button>
                 </div>
@@ -210,16 +242,16 @@
     </aside>
 
     <!-- ÁREA DO MAPA GPS -->
-    <main class="flex-1 h-full relative">
-        <div id="map" class="w-full h-full bg-slate-900"></div>
+    <main class="flex-1 h-[400px] md:h-full relative min-h-[350px]">
+        <div id="map"></div>
 
         <!-- BOTOES FLUTUANTES NO MAPA -->
         <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
-            <button onclick="recenterMap()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition">
+            <button onclick="recenterMap()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition" title="Centralizar Mapa">
                 <i class="fa-solid fa-crosshairs"></i>
             </button>
-            <button onclick="toggleUserModal()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition">
-                <i class="fa-solid fa-user-plus"></i>
+            <button onclick="toggleUserModal()" class="w-10 h-10 bg-slate-900/90 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 shadow-xl flex items-center justify-center transition" title="Meu Perfil">
+                <i class="fa-solid fa-user"></i>
             </button>
         </div>
 
@@ -228,7 +260,7 @@
             <div class="flex items-center gap-2 font-semibold text-slate-100 mb-1">
                 <i class="fa-solid fa-shield-halved text-brand-400"></i> Segurança no Campus
             </div>
-            Caronas exclusivas entre estudantes. Avalie motoristas e mantenha o sistema seguro para todos!
+            Caronas exclusivas entre estudantes. Avalie e ajude a comunidade!
         </div>
     </main>
 
@@ -250,13 +282,13 @@
             <div class="p-4 overflow-y-auto custom-scrollbar space-y-4">
                 <!-- Perfil Header Card -->
                 <div class="flex items-start gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center font-bold text-slate-950 text-2xl shadow-lg shadow-brand-500/20" id="dp-avatar">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center font-bold text-slate-950 text-2xl shadow-lg shadow-brand-500/20 shrink-0" id="dp-avatar">
                         M
                     </div>
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between">
-                            <h4 class="font-bold text-slate-100 text-lg" id="dp-name">Nome do Motorista</h4>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30" id="dp-badge">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <h4 class="font-bold text-slate-100 text-lg truncate" id="dp-name">Nome do Motorista</h4>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap" id="dp-badge">
                                 Top Carona
                             </span>
                         </div>
@@ -266,7 +298,7 @@
                         <div class="mt-3 grid grid-cols-2 gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
                             <div>
                                 <span class="text-slate-500 block text-[10px]">VEÍCULO</span>
-                                <span class="font-medium text-slate-200" id="dp-car">Gol 1.0 - Prata</span>
+                                <span class="font-medium text-slate-200 truncate block" id="dp-car">Gol 1.0 - Prata</span>
                             </div>
                             <div>
                                 <span class="text-slate-500 block text-[10px]">PLACA</span>
@@ -276,10 +308,10 @@
                     </div>
                 </div>
 
-                <!-- Estatísticas de Reputação & Botões de Like / Dislike -->
+                <!-- Estatísticas de Reputação & Botões Lado a Lado de Like / Dislike -->
                 <div class="grid grid-cols-3 gap-3 text-center">
-                    <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/40">
-                        <div class="text-xs text-slate-400">Caronas Dadas</div>
+                    <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/40 flex flex-col items-center justify-center">
+                        <div class="text-[10px] uppercase font-semibold text-slate-400">Caronas Dadas</div>
                         <div class="text-xl font-bold text-white mt-1" id="dp-rides-count">0</div>
                     </div>
 
@@ -311,7 +343,7 @@
 
                     <!-- Form de Novo Comentário -->
                     <div class="space-y-2">
-                        <textarea id="dp-new-comment" placeholder="Escreva uma avaliação sobre a carona deste motorista..." rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                        <textarea id="dp-new-comment" placeholder="Escreva uma avaliação sobre este motorista..." rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none"></textarea>
                         <div class="flex justify-end">
                             <button onclick="addDriverComment()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-brand-400 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-paper-plane"></i> Enviar Avaliação
@@ -326,7 +358,7 @@
                 </div>
             </div>
 
-            <!-- Footer com Botões de Ação Directa -->
+            <!-- Footer com Botões de Ação -->
             <div class="p-4 border-t border-slate-800 bg-slate-900/80 flex gap-2">
                 <button onclick="openChatFromProfile()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition">
                     <i class="fa-solid fa-message text-brand-400"></i> Mensagem Privada
@@ -345,13 +377,13 @@
             <!-- Header Chat -->
             <div class="p-3.5 border-b border-slate-800 flex justify-between items-center bg-slate-900">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-brand-500 text-slate-950 font-bold flex items-center justify-center text-sm" id="chat-driver-avatar">
+                    <div class="w-9 h-9 rounded-xl bg-brand-500 text-slate-950 font-bold flex items-center justify-center text-sm shrink-0" id="chat-driver-avatar">
                         M
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-100 text-sm leading-tight" id="chat-driver-name">Nome do Motorista</h4>
                         <p class="text-[10px] text-emerald-400 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Mensagem Privada - Trajeto
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Chat Privado de Trajeto
                         </p>
                     </div>
                 </div>
@@ -367,7 +399,7 @@
 
             <!-- Entrada de Texto -->
             <form onsubmit="sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-900 flex gap-2">
-                <input type="text" id="chat-input" placeholder="Combine ponto de encontro ou ajuste de rota..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                <input type="text" id="chat-input" placeholder="Combine ponto de encontro ou trocas de rota..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                 <button type="submit" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-slate-950 rounded-xl font-bold text-xs flex items-center justify-center transition">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
@@ -391,12 +423,12 @@
             <form onsubmit="handleRegisterDriver(event)" class="p-4 space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Nome Completo</label>
-                    <input type="text" id="reg-driver-name" required placeholder="Seu nome completo" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                    <input type="text" id="reg-driver-name" required placeholder="Seu nome" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
                 </div>
 
                 <div>
-                    <label class="block text-slate-400 mb-1">Curso / Campus</label>
-                    <input type="text" id="reg-driver-course" required placeholder="Ex: Ciência da Computação - Campus Sul" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
+                    <label class="block text-slate-400 mb-1">Curso / Faculdade</label>
+                    <input type="text" id="reg-driver-course" required placeholder="Ex: Engenharia - Campus Central" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -405,25 +437,25 @@
                         <input type="text" id="reg-driver-model" required placeholder="Ex: Onix 1.0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-slate-400 mb-1">Cor do Veículo</label>
+                        <label class="block text-slate-400 mb-1">Cor</label>
                         <input type="text" id="reg-driver-color" required placeholder="Ex: Preto" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-slate-400 mb-1">Placa do Veículo</label>
-                        <input type="text" id="reg-driver-plate" required placeholder="Ex: RIO-2A18" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none font-mono uppercase">
+                        <label class="block text-slate-400 mb-1">Placa</label>
+                        <input type="text" id="reg-driver-plate" required placeholder="Ex: ABC-1234" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none font-mono uppercase">
                     </div>
                     <div>
-                        <label class="block text-slate-400 mb-1">Vagas no Carro</label>
+                        <label class="block text-slate-400 mb-1">Vagas</label>
                         <input type="number" id="reg-driver-seats" min="1" max="6" value="3" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 outline-none">
                     </div>
                 </div>
 
                 <div class="pt-2">
                     <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-brand-600/20">
-                        Cadastrar Veículo & Começar a Dar Carona
+                        Cadastrar e Oferecer Caronas
                     </button>
                 </div>
             </form>
@@ -434,7 +466,7 @@
     <div id="modal-user" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden p-4 space-y-3">
             <h3 class="font-bold text-slate-100 text-sm">Seu Perfil de Passageiro</h3>
-            <p class="text-xs text-slate-400">Insira seu nome para identificação nas mensagens e pedidos.</p>
+            <p class="text-xs text-slate-400">Como prefere ser chamado(a) nas solicitações?</p>
             
             <input type="text" id="user-name-input" placeholder="Seu nome" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-brand-500 outline-none">
             
@@ -445,11 +477,9 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE LÓGICA E MAPA -->
+    <!-- SCRIPT DA APLICAÇÃO -->
     <script>
-        // ==========================================
-        // DADOS PADRÃO E ESTADO DA APLICAÇÃO
-        // ==========================================
+        // Dados Padrão Iniciais
         const DEFAULT_DRIVERS = [
             {
                 id: 'd1',
@@ -520,13 +550,9 @@
         let map = null;
         let markersGroup = null;
         let routeLayer = null;
-
-        // Coordenadas simuladas iniciais (Campus / Centro)
         let mapCenter = [-22.9068, -43.1729];
 
-        // ==========================================
-        // INICIALIZAÇÃO
-        // ==========================================
+        // Inicialização
         window.onload = function () {
             loadLocalStorageData();
             initMap();
@@ -534,12 +560,21 @@
             renderLeaderboard();
             renderAllDriversTab();
             updateUserUI();
+
+            // Auto-ajuste de redimensionamento de tela para o mapa
+            window.addEventListener('resize', () => {
+                if (map) map.invalidateSize();
+            });
         };
 
         function loadLocalStorageData() {
             const savedDrivers = localStorage.getItem('sr_drivers');
             if (savedDrivers) {
-                drivers = JSON.parse(savedDrivers);
+                try {
+                    drivers = JSON.parse(savedDrivers);
+                } catch(e) {
+                    drivers = DEFAULT_DRIVERS;
+                }
             } else {
                 drivers = DEFAULT_DRIVERS;
                 saveDriversToStorage();
@@ -547,7 +582,9 @@
 
             const savedUser = localStorage.getItem('sr_user');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser);
+                try {
+                    currentUser = JSON.parse(savedUser);
+                } catch(e) {}
             }
         }
 
@@ -571,15 +608,12 @@
             document.getElementById('user-name-input').value = currentUser.name;
         }
 
-        // ==========================================
-        // MAPA LEAFLET INTERATIVO
-        // ==========================================
+        // Mapa Leaflet
         function initMap() {
-            map = L.map('map', {
-                zoomControl: false
-            }).setView(mapCenter, 14);
+            if (typeof L === 'undefined') return;
 
-            // Layer com estilo Dark do OpenStreetMap / CartoDB Dark
+            map = L.map('map', { zoomControl: false }).setView(mapCenter, 14);
+
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap &copy; CARTO',
                 subdomains: 'abcd',
@@ -590,13 +624,15 @@
 
             markersGroup = L.layerGroup().addTo(map);
             renderDriverMarkersOnMap();
+
+            setTimeout(() => { map.invalidateSize(); }, 300);
         }
 
         function renderDriverMarkersOnMap() {
+            if (!markersGroup) return;
             markersGroup.clearLayers();
 
             drivers.forEach(driver => {
-                // Ícone SVG customizado para o motorista no mapa com contadores de Like e Dislike
                 const customIcon = L.divIcon({
                     className: 'custom-driver-pin',
                     html: `
@@ -604,7 +640,7 @@
                             <div class="w-9 h-9 rounded-full bg-slate-900 border-2 border-brand-500 shadow-xl flex items-center justify-center text-brand-400 font-bold text-sm transform transition group-hover:scale-110">
                                 <i class="fa-solid fa-car"></i>
                             </div>
-                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-slate-700 whitespace-nowrap flex gap-1 items-center">
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-slate-700 whitespace-nowrap flex gap-1 items-center shadow">
                                 <span class="text-emerald-400">👍 ${driver.likes}</span>
                                 <span class="text-red-400">👎 ${driver.dislikes}</span>
                             </div>
@@ -632,9 +668,7 @@
         }
 
         function recenterMap() {
-            if (map) {
-                map.setView(mapCenter, 14);
-            }
+            if (map) map.setView(mapCenter, 14);
         }
 
         function useCurrentLocation() {
@@ -649,19 +683,19 @@
                         .bindPopup("Sua Localização Atual")
                         .openPopup();
                         
-                    document.getElementById('input-pickup').value = "Minha Localização Atual (GPS)";
+                    document.getElementById('input-pickup').value = "Minha Localização (GPS)";
                 }, () => {
-                    alert("Não foi possível obter sua localização exata. Usando localização simulada.");
+                    alert("Não foi possível acessar seu GPS. Usando localização do campus.");
                 });
             } else {
-                alert("Geolocalização não é suportada neste navegador.");
+                alert("GPS não suportado neste dispositivo.");
             }
         }
 
         function searchRoute() {
+            if (!map) return;
             if (routeLayer) map.removeLayer(routeLayer);
 
-            // Simula uma linha de rota entre origem e destino no mapa
             const startPoint = [mapCenter[0] - 0.01, mapCenter[1] - 0.01];
             const endPoint = [mapCenter[0] + 0.015, mapCenter[1] + 0.02];
 
@@ -674,22 +708,19 @@
             routeLayer = L.polyline(latlngs, { color: '#22c55e', weight: 4, opacity: 0.8, dashArray: '8, 8' }).addTo(map);
             map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
 
-            // Adiciona marcadores de Origem e Destino
-            L.marker(startPoint).addTo(map).bindPopup("Origem: Ponto de Embarque");
-            L.marker(endPoint).addTo(map).bindPopup("Destino: Campus Universitário");
+            L.marker(startPoint).addTo(map).bindPopup("Ponto de Embarque");
+            L.marker(endPoint).addTo(map).bindPopup("Destino");
         }
 
-        // ==========================================
-        // RENDERIZAÇÃO DA INTERFACE & ABAS
-        // ==========================================
+        // Abas e Renderização
         function switchTab(tabName) {
             ['ride', 'ranking', 'drivers'].forEach(t => {
                 document.getElementById(`content-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50';
+                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50';
             });
 
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700';
+            document.getElementById(`tab-${tabName}`).className = 'flex-1 py-2.5 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition duration-200 bg-slate-800 text-brand-400 border border-slate-700';
         }
 
         function renderDriversList() {
@@ -703,7 +734,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start" onclick="openDriverProfile('${driver.id}')">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 text-brand-400 font-bold flex items-center justify-center text-sm">
+                            <div class="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 text-brand-400 font-bold flex items-center justify-center text-sm shrink-0">
                                 ${driver.name.charAt(0)}
                             </div>
                             <div>
@@ -717,8 +748,7 @@
                     </div>
 
                     <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-700/40">
-                        <!-- Exibição lado a lado de Like e Dislike na lista de motoristas -->
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5">
                             <span class="text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                                 <i class="fa-solid fa-thumbs-up"></i> ${driver.likes}
                             </span>
@@ -745,7 +775,6 @@
             const container = document.getElementById('leaderboard-list');
             container.innerHTML = '';
 
-            // Ordena considerando Caronas dadas + Saldo de Recomendações (Likes - Dislikes)
             const sorted = [...drivers].sort((a, b) => (b.ridesGiven + (b.likes - b.dislikes)) - (a.ridesGiven + (a.likes - a.dislikes)));
 
             sorted.forEach((driver, idx) => {
@@ -762,7 +791,7 @@
                         <div class="w-6 text-center font-bold ${medalColor}">
                             ${idx < 3 ? '<i class="fa-solid fa-trophy"></i>' : `#${idx + 1}`}
                         </div>
-                        <div class="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-bold text-slate-200 text-xs">
+                        <div class="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-bold text-slate-200 text-xs shrink-0">
                             ${driver.name.charAt(0)}
                         </div>
                         <div>
@@ -806,9 +835,7 @@
             });
         }
 
-        // ==========================================
-        // PERFIL DO MOTORISTA & SISTEMA DE REPUTAÇÃO
-        // ==========================================
+        // Perfil e Reputação
         function openDriverProfile(driverId) {
             selectedDriverId = driverId;
             const driver = drivers.find(d => d.id === driverId);
@@ -881,7 +908,7 @@
             driver.reviews.unshift({
                 author: currentUser.name,
                 text: text,
-                date: 'Agora mesmo'
+                date: 'Agora'
             });
 
             saveDriversToStorage();
@@ -889,9 +916,7 @@
             openDriverProfile(selectedDriverId);
         }
 
-        // ==========================================
-        // SISTEMA DE CHAT PRIVADO
-        // ==========================================
+        // Chat
         function openChatWithDriver(driverId, e) {
             if (e) e.stopPropagation();
             selectedDriverId = driverId;
@@ -921,7 +946,7 @@
             container.innerHTML = '';
 
             if (messages.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Inicie a conversa para combinar pontos de encontro ou mudanças de rota.</div>`;
+                container.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Inicie a conversa para combinar pontos de encontro ou trocas de trajeto.</div>`;
                 return;
             }
 
@@ -963,11 +988,10 @@
             input.value = '';
             renderChatMessages(driver.chatHistory);
 
-            // Resposta Automática Simulada do Motorista
             setTimeout(() => {
                 driver.chatHistory.push({
                     sender: driver.name,
-                    text: "Perfeito! Combinado, estou a caminho do local.",
+                    text: "Perfeito! Combinado, nos vemos no local indicado.",
                     time: timeStr
                 });
                 saveDriversToStorage();
@@ -975,9 +999,7 @@
             }, 1200);
         }
 
-        // ==========================================
-        // FLUXO DE PEDIDO E VIAGEM
-        // ==========================================
+        // Viagens e Pedidos
         function requestRide(driverId, e) {
             if (e) e.stopPropagation();
             const driver = drivers.find(d => d.id === driverId);
@@ -989,19 +1011,17 @@
                 car: `${driver.carModel} (${driver.plate})`
             };
 
-            // Incrementa contador de caronas dadas do motorista
             driver.ridesGiven += 1;
             saveDriversToStorage();
             renderDriversList();
             renderLeaderboard();
 
-            // Atualiza Painel Inferior de Carona Ativa
             document.getElementById('active-driver-name').innerText = driver.name;
             document.getElementById('active-driver-car').innerText = `${driver.carModel} • Placa: ${driver.plate}`;
             document.getElementById('active-ride-panel').classList.remove('hidden');
 
             searchRoute();
-            alert(`Carona solicitada com sucesso para ${driver.name}! Você pode acompanhar o trajeto e enviar mensagens.`);
+            alert(`Carona solicitada com sucesso para ${driver.name}!`);
         }
 
         function requestRideWithDriverFromProfile() {
@@ -1015,15 +1035,11 @@
             activeRide = null;
             document.getElementById('active-ride-panel').classList.add('hidden');
             
-            if (routeLayer) map.removeLayer(routeLayer);
-
-            // Abre modal para o usuário poder avaliar
+            if (routeLayer && map) map.removeLayer(routeLayer);
             openDriverProfile(driverId);
         }
 
-        // ==========================================
-        // CADASTRO DE MOTORISTA
-        // ==========================================
+        // Cadastro de Motoristas
         function openRegisterDriverModal() {
             document.getElementById('modal-register-driver').classList.remove('hidden');
         }
@@ -1064,12 +1080,10 @@
             renderDriverMarkersOnMap();
 
             closeModal('modal-register-driver');
-            alert("Cadastro de motorista realizado com sucesso! Seu veículo já está visível no mapa do campus.");
+            alert("Cadastro de motorista efetuado! Seu veículo está visível no mapa.");
         }
 
-        // ==========================================
-        // HELPERS E MODAIS
-        // ==========================================
+        // Helpers Modais
         function toggleUserModal() {
             document.getElementById('modal-user').classList.toggle('hidden');
         }
