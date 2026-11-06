@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <meta name="description" content="Student Ride connects students looking for affordable rides with student drivers.">
+  <title>Student Ride — Safe Rides, Student Connections</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#home" aria-label="Student Ride home">
+        <span class="brand-mark" aria-hidden="true">SR</span>
+        <span>Student <strong>Ride</strong></span>
+      </a>
+
+      <button class="menu-toggle" id="menuToggle" type="button"
+              aria-expanded="false" aria-controls="primaryNav">
+        <span class="sr-only">Toggle navigation</span>
+        <span aria-hidden="true">☰</span>
+      </button>
+
+      <nav class="primary-nav" id="primaryNav" aria-label="Main navigation">
+        <a href="#home">Home</a>
+        <a href="#find">Find a Ride</a>
+        <a href="#offer">Offer a Ride</a>
+        <a href="#how">How It Works</a>
+        <a href="#rewards">Rewards</a>
+        <a href="#accessibility">Accessibility</a>
+        <a href="#safety">Safety</a>
+        <a href="#about">About Us</a>
+        <a href="#account">Login / Sign Up</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+
+    <section class="hero section" id="home" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <span class="eyebrow">Your campus. Your community. Your ride.</span>
+        <h1 id="heroTitle">Safe Rides,<br><span>Student Connections.</span></h1>
+        <p>Find a ride with a fellow student, or share your empty seats. Make campus travel easier, more affordable, and more connected.</p>
+        <div class="button-row">
+          <a class="button button-primary" href="#find">Find a Ride <span aria-hidden="true">→</span></a>
+          <a class="button button-light" href="#offer">Offer a Ride</a>
+        </div>
+        <p class="demo-note">A student-to-student ride-sharing demo. No real bookings or payments are processed.</p>
+      </div>
+      <div class="hero-card" aria-label="Example trip from campus to downtown">
+        <div class="route-heading"><span class="live-dot"></span> A better way to get there</div>
+        <div class="route-line">
+          <span class="route-pin">●</span>
+          <div><small>FROM</small><strong>North Campus</strong></div>
+        </div>
+        <div class="route-connector"></div>
+        <div class="route-line">
+          <span class="route-pin destination">●</span>
+          <div><small>TO</small><strong>Downtown Station</strong></div>
+        </div>
+        <div class="trip-summary"><span>🚗 Student drivers</span><span>🤝 Shared community</span></div>
+      </div>
+    </section>
+
+    <section class="section benefits" aria-labelledby="benefitsTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Why students ride together</span>
+        <h2 id="benefitsTitle">More than a ride</h2>
+      </div>
+      <div class="card-grid three">
+        <article class="info-card"><span class="icon">💸</span><h3>Budget-friendly</h3><p>Share the cost of a trip and keep more in your student budget.</p></article>
+        <article class="info-card"><span class="icon">🛡️</span><h3>Student-focused</h3><p>Profiles and safety guidance help students make informed choices.</p></article>
+        <article class="info-card"><span class="icon">🌱</span><h3>Better together</h3><p>Fill spare seats, build connections, and reduce solo trips.</p></article>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="find" aria-labelledby="findTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Plan your next trip</span>
+        <h2 id="findTitle">Find a ride</h2>
+        <p>Search sample rides shared by fellow students.</p>
+      </div>
+      <form class="form-card search-form" id="searchForm">
+        <label>Departure location
+          <input name="departure" type="text" placeholder="e.g. North Campus">
+        </label>
+        <label>Destination
+          <input name="destination" type="text" placeholder="e.g. Downtown">
+        </label>
+        <label>Date
+          <input name="date" type="date">
+        </label>
+        <label>Minimum seats
+          <select name="seats">
+            <option value="1">Any</option><option value="2">2 or more</option>
+            <option value="3">3 or more</option>
+          </select>
+        </label>
+        <button class="button button-primary" type="submit">Search rides</button>
+        <button class="button button-outline" id="clearSearch" type="button">Clear filters</button>
+      </form>
+      <div class="results-heading">
+        <h3>Available rides</h3><span id="rideCount" class="muted"></span>
+      </div>
+      <div class="card-grid three" id="rideResults" aria-live="polite"></div>
+      <p class="empty-state" id="noRides" hidden>No rides match those filters yet. Try another search or check back later.</p>
+    </section>
+
+    <section class="section" id="offer" aria-labelledby="offerTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Have an extra seat?</span>
+        <h2 id="offerTitle">Offer a ride</h2>
+        <p>Share your route with students going the same way. This demo stores listings in this browser only.</p>
+      </div>
+      <form class="form-card form-grid" id="offerForm">
+        <label>Departure location <input name="departure" required placeholder="e.g. East Campus"></label>
+        <label>Destination <input name="destination" required placeholder="e.g. Airport"></label>
+        <label>Date <input name="date" type="date" required></label>
+        <label>Departure time <input name="time" type="time" required></label>
+        <label>Available seats <input name="seats" type="number" min="1" max="8" value="3" required></label>
+        <label>Price per passenger ($) <input name="price" type="number" min="0" step="0.50" value="5" required></label>
+        <button class="button button-primary form-submit" type="submit">Publish ride</button>
+      </form>
+      <div id="myRidesArea" class="my-rides-area"></div>
+    </section>
+
+    <section class="section section-tint" id="how" aria-labelledby="howTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Simple by design</span>
+        <h2 id="howTitle">How it works</h2>
+      </div>
+      <div class="steps-grid">
+        <article class="step-card"><span class="step-number">01</span><h3>Find or offer</h3><p>Search a route that works for you or publish a trip with spare seats.</p></article>
+        <article class="step-card"><span class="step-number">02</span><h3>Review profiles</h3><p>Check the student profile and trip details before deciding whether to connect.</p></article>
+        <article class="step-card"><span class="step-number">03</span><h3>Confirm together</h3><p>In a real service, rider and driver would coordinate trip details directly. This demo only simulates confirmation.</p></article>
+        <article class="step-card"><span class="step-number">04</span><h3>Ride and earn</h3><p>Drivers can mark a demo trip complete to see how points and rewards work.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="rewards" aria-labelledby="rewardsTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Good rides deserve a little extra</span>
+        <h2 id="rewardsTitle">Driver rewards</h2>
+        <p>In this demo, points are added when you mark one of your published rides complete.</p>
+      </div>
+      <div class="rewards-panel">
+        <div>
+          <span class="muted">Your demo points balance</span>
+          <p class="points-total"><span id="pointsBalance">0</span> <small>points</small></p>
+          <p id="rewardsMessage" class="muted">Complete a ride you publish to earn 100 points.</p>
+          <div class="progress-label"><span>Next reward: 500 points</span><span id="progressText">0%</span></div>
+          <div class="progress-track" role="progressbar" aria-label="Progress to next reward" aria-valuemin="0" aria-valuemax="500" aria-valuenow="0">
+            <span id="progressBar"></span>
+          </div>
+        </div>
+        <div class="reward-list">
+          <h3>Example benefits</h3>
+          <p><span>🌟</span> 500 points — Campus café voucher</p>
+          <p><span>🎟️</span> 1,000 points — Student event pass</p>
+          <p class="demo-note">Rewards shown are examples, not redeemable offers.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="accessibility" aria-labelledby="accessTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Designed for more people</span>
+        <h2 id="accessTitle">Accessibility</h2>
+        <p>Use the site with a keyboard or try voice navigation in a supported browser.</p>
+      </div>
+      <div class="access-panel">
+        <div>
+          <h3>Voice-assisted navigation</h3>
+          <p>Allow microphone access, then say a section name such as “find a ride,” “safety,” or “contact.” You can also say “read page.” Voice recognition availability depends on your browser.</p>
+          <button class="button button-primary" type="button" id="voiceButton">🎙 Start voice navigation</button>
+          <p class="demo-note" id="voiceStatus" aria-live="polite">Voice controls are optional.</p>
+        </div>
+        <div class="access-tips">
+          <h3>Built-in access features</h3>
+          <ul><li>Skip link and keyboard-friendly controls</li><li>Visible focus indicators and readable contrast</li><li>Labels and status updates for assistive technology</li><li>Responsive layout and reduced-motion support</li></ul>
+          <button class="button button-outline" type="button" id="textSizeButton" aria-pressed="false">Increase text size</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="safety" aria-labelledby="safetyTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Look out for one another</span>
+        <h2 id="safetyTitle">Safety comes first</h2>
+        <p>Student Ride is a concept, not a screening or emergency service. Use these guidelines for any shared trip.</p>
+      </div>
+      <div class="card-grid three">
+        <article class="info-card"><span class="icon">🎓</span><h3>Student verification concept</h3><p>A real platform could verify school email addresses. No identity or enrollment checks are performed here.</p></article>
+        <article class="info-card"><span class="icon">👤</span><h3>Know who you’re riding with</h3><p>Review profile details, share plans with someone you trust, and meet in a public place.</p></article>
+        <article class="info-card"><span class="icon">📍</span><h3>Plan ahead</h3><p>Confirm the route, pickup point, and cost before departure. Trust your instincts and leave if something feels wrong.</p></article>
+      </div>
+      <div class="safety-callout"><strong>Need immediate help?</strong> Contact local emergency services using your region’s emergency number. This site is not monitored and cannot dispatch help.</div>
+    </section>
+
+    <section class="section section-tint" id="about" aria-labelledby="aboutTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Our mission</span>
+        <h2 id="aboutTitle">About Student Ride</h2>
+        <p>We imagine a campus community where getting across town doesn’t have to mean traveling alone or stretching a student budget.</p>
+      </div>
+      <div class="about-panel">
+        <p>Student Ride is a student-focused ride-sharing concept built around affordable transportation, meaningful student connections, accessibility, and safer travel habits. Students can explore example rides, share their own routes, and see how a community rewards system might work.</p>
+        <p>Our goal is to make the idea easy to understand and accessible to everyone. A real service would need secure accounts, verified student status, privacy protections, support, and reliable safety processes before taking real bookings.</p>
+      </div>
+    </section>
+
+    <section class="section" id="account" aria-labelledby="accountTitle">
+      <div class="section-heading">
+        <span class="eyebrow">Your student profile</span>
+        <h2 id="accountTitle">Login / Sign up</h2>
+        <p>Demo profiles are saved only in your browser. Do not enter a real password.</p>
+      </div>
+      <div class="account-grid">
+        <form class="form-card" id="signupForm">
+          <h3>Create demo profile</h3>
+          <label>Full name <input name="name" required autocomplete="name" placeholder="Your name"></label>
+          <label>Student email <input name="email" type="email" required autocomplete="email" placeholder="name@university.edu"></label>
+          <label>Password <input name="password" type="password" required minlength="4" autocomplete="new-password" placeholder="Demo password"></label>
+          <button class="button button-primary" type="submit">Create demo account</button>
+        </form>
+        <form class="form-card" id="loginForm">
+          <h3>Log in to demo</h3>
+          <label>Student email <input name="email" type="email" required autocomplete="email"></label>
+          <label>Password <input name="password" type="password" required autocomplete="current-password"></label>
+          <button class="button button-outline" type="submit">Log in</button>
+          <button class="text-button" type="button" id="logoutButton">Log out</button>
+        </form>
+      </div>
+      <div class="profile-panel" id="profilePanel" aria-live="polite"></div>
+      <div class="verification-panel">
+        <div><h3>Student verification</h3><p>Verification is a concept only; this button does not check your identity, school, or email.</p></div>
+        <button class="button button-outline" id="verifyButton" type="button">Try demo verification</button>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="contact" aria-labelledby="contactTitle">
+      <div class="section-heading">
+        <span class="eyebrow">We’re listening</span>
+        <h2 id="contactTitle">Contact & FAQs</h2>
+        <p>Send a demo message or browse common questions.</p>
+      </div>
+      <div class="contact-grid">
+        <form class="form-card" id="contactForm">
+          <label>Your name <input name="name" required></label>
+          <label>Email <input name="email" type="email" required></label>
+          <label>Message <textarea name="message" rows="5" required placeholder="How can we help?"></textarea></label>
+          <button class="button button-primary" type="submit">Send message</button>
+          <p class="demo-note">Messages are not sent to a support team.</p>
+        </form>
+        <div class="faq-list">
+          <details><summary>Are rides and payments real?</summary><p>No. Ride listings and booking confirmations are for demonstration. No money changes hands.</p></details>
+          <details><summary>Is my student status verified?</summary><p>No. The verification control is a visual demo and does not check student identity or enrollment.</p></details>
+          <details><summary>Where is my demo profile stored?</summary><p>Demo profile and reward data are saved in this browser’s local storage. Clearing browser data removes them.</p></details>
+          <details><summary>How can I get help in an emergency?</summary><p>Contact local emergency services. This demo is not monitored and cannot provide emergency assistance.</p></details>
+          <div class="support-note"><strong>Demo support</strong><br>There is no live support inbox connected to this website.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand footer-brand" href="#home"><span class="brand-mark" aria-hidden="true">SR</span><span>Student <strong>Ride</strong></span></a>
+    <p>Safe Rides, Student Connections.</p>
+    <p class="demo-note">A static demonstration project. No real bookings, payments, authentication, verification, or emergency response.</p>
+    <a href="#safety">Review safety information</a>
+  </footer>
+
+  <dialog id="bookingDialog" aria-labelledby="bookingTitle">
+    <div class="dialog-content">
+      <button class="dialog-close" id="closeDialog" aria-label="Close dialog">×</button>
+      <span class="icon">✅</span>
+      <h2 id="bookingTitle">Demo booking request</h2>
+      <p id="bookingDetails"></p>
+      <p class="demo-note">This is not a real booking. No driver is notified and no payment is taken.</p>
+      <button class="button button-primary" id="confirmBooking" type="button">Got it</button>
+    </div>
+  </dialog>
+</body>
+</html>
